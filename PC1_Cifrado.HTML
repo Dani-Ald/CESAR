@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cifrado César</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,500&family=JetBrains+Mono:wght@400;500;600&display=swap"
+        rel="stylesheet">
+    <style>
+        :root {
+            --bg: #171a24;
+            --bg-deep: #10121a;
+            --surface: #212536;
+            --surface-alt: #2a2f45;
+            --gold: #c9a227;
+            --gold-bright: #e0bc44;
+            --teal: #4fa88b;
+            --ink: #eae6da;
+            --ink-dim: #969db3;
+            --line: rgba(201, 162, 39, 0.22);
+            --danger: #b8564f;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            min-height: 100vh;
+            background:
+                radial-gradient(ellipse at 50% -10%, #262c42 0%, var(--bg) 55%),
+                var(--bg-deep);
+            color: var(--ink);
+            font-family: 'Cormorant Garamond', serif;
+            display: flex;
+            justify-content: center;
+            padding: 56px 20px 80px;
+        }
+
+        .page {
+            width: 100%;
+            max-width: 620px;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 8px;
+        }
+
+        h1 {
+            font-size: 2.6rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            margin: 0 0 6px;
+        }
+
+        .subtitulo {
+            color: var(--ink-dim);
+            font-size: 1.15rem;
+            font-style: italic;
+            margin: 0;
+            line-height: 1.5;
+        }
+
+        /* --- Rueda del cifrado --- */
+        .rueda-envoltorio {
+            display: flex;
+            justify-content: center;
+            margin: 36px 0 30px;
+        }
+
+        .rueda-anillo-interior {
+            transform-origin: 150px 150px;
+            transition: transform 0.7s cubic-bezier(.32, .9, .35, 1);
+        }
+
+        .rueda-letra {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+            fill: var(--ink-dim);
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+
+        .rueda-letra.exterior {
+            fill: var(--ink);
+        }
+
+        .rueda-letra.interior {
+            fill: var(--gold-bright);
+        }
+
+        .rueda-centro-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 26px;
+            fill: var(--gold-bright);
+            text-anchor: middle;
+            dominant-baseline: middle;
+        }
+
+        .rueda-centro-num.modo-descifrar {
+            fill: var(--teal);
+        }
+
+        .rueda-centro-etiqueta {
+            font-family: 'Cormorant Garamond', serif;
+            font-style: italic;
+            font-size: 13px;
+            fill: var(--ink-dim);
+            text-anchor: middle;
+        }
+
+        /* --- Tarjeta principal --- */
+        .tarjeta {
+            background: var(--surface);
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            padding: 34px 34px 30px;
+        }
+
+        .campo {
+            margin-bottom: 24px;
+        }
+
+        .campo label {
+            display: block;
+            font-size: 1.05rem;
+            margin-bottom: 8px;
+            color: var(--ink);
+        }
+
+        textarea,
+        input[type="number"] {
+            width: 100%;
+            background: var(--bg-deep);
+            border: 1px solid var(--line);
+            border-radius: 3px;
+            color: var(--ink);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            padding: 12px 14px;
+            resize: vertical;
+        }
+
+        textarea {
+            min-height: 88px;
+            line-height: 1.5;
+        }
+
+        textarea:focus,
+        input[type="number"]:focus,
+        button:focus-visible,
+        .modo-btn:focus-visible {
+            outline: 2px solid var(--gold-bright);
+            outline-offset: 2px;
+        }
+
+        .fila-llave {
+            display: flex;
+            align-items: flex-end;
+            gap: 18px;
+        }
+
+        .fila-llave .campo {
+            flex: 1;
+            margin-bottom: 0;
+        }
+
+        .numero-romano {
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--ink-dim);
+            font-size: 0.85rem;
+            padding-bottom: 12px;
+            min-width: 70px;
+            text-align: right;
+        }
+
+        /* --- Selector de modo --- */
+        .modo-selector {
+            display: flex;
+            border: 1px solid var(--line);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .modo-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--ink-dim);
+            font-family: 'Cormorant Garamond', serif;
+            font-size: 1.05rem;
+            font-style: italic;
+            padding: 11px 10px;
+            cursor: pointer;
+            transition: background 0.25s, color 0.25s;
+        }
+
+        .modo-btn+.modo-btn {
+            border-left: 1px solid var(--line);
+        }
+
+        .modo-btn.activo[data-modo="cifrar"] {
+            background: rgba(201, 162, 39, 0.16);
+            color: var(--gold-bright);
+        }
+
+        .modo-btn.activo[data-modo="descifrar"] {
+            background: rgba(79, 168, 139, 0.16);
+            color: var(--teal);
+        }
+
+        .boton-principal {
+            width: 100%;
+            background: var(--gold);
+            border: none;
+            border-radius: 3px;
+            color: var(--bg-deep);
+            font-family: 'Cormorant Garamond', serif;
+            font-weight: 600;
+            font-size: 1.15rem;
+            padding: 13px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.15s;
+        }
+
+        .boton-principal:hover {
+            background: var(--gold-bright);
+        }
+
+        .boton-principal:active {
+            transform: scale(0.99);
+        }
+
+        .boton-principal.modo-descifrar {
+            background: var(--teal);
+        }
+
+        .boton-principal.modo-descifrar:hover {
+            background: #5fbf9d;
+        }
+
+        /* --- Resultado --- */
+        .resultado {
+            margin-top: 26px;
+            border-top: 1px solid var(--line);
+            padding-top: 22px;
+            display: none;
+        }
+
+        .resultado.visible {
+            display: block;
+        }
+
+        .resultado-etiqueta {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 8px;
+        }
+
+        .resultado-etiqueta span {
+            font-size: 1.05rem;
+            color: var(--ink-dim);
+            font-style: italic;
+        }
+
+        .copiar-btn {
+            background: none;
+            border: 1px solid var(--line);
+            color: var(--ink-dim);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.78rem;
+            padding: 5px 10px;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: color 0.2s, border-color 0.2s;
+        }
+
+        .copiar-btn:hover {
+            color: var(--gold-bright);
+            border-color: var(--gold-bright);
+        }
+
+        .resultado-texto {
+            background: var(--bg-deep);
+            border: 1px solid var(--line);
+            border-radius: 3px;
+            padding: 14px 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-word;
+            color: var(--gold-bright);
+        }
+
+        .resultado-texto.modo-descifrar {
+            color: var(--teal);
+        }
+
+        /* --- Explicación --- */
+        details {
+            margin-top: 22px;
+            color: var(--ink-dim);
+        }
+
+        summary {
+            cursor: pointer;
+            font-size: 1rem;
+            font-style: italic;
+            color: var(--ink);
+        }
+
+        details p {
+            font-size: 1rem;
+            line-height: 1.65;
+            margin: 12px 0 0;
+        }
+
+        code {
+            font-family: 'JetBrains Mono', monospace;
+            background: var(--surface-alt);
+            padding: 1px 5px;
+            border-radius: 3px;
+            font-size: 0.88rem;
+            color: var(--ink);
+        }
+
+        @media (max-width: 480px) {
+            h1 {
+                font-size: 2.1rem;
+            }
+
+            .tarjeta {
+                padding: 26px 20px;
+            }
+
+            .fila-llave {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .numero-romano {
+                text-align: left;
+                padding-bottom: 0;
+            }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+            .rueda-anillo-interior {
+                transition: none;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="page">
+
+        <header>
+            <h1>Cifrado César</h1>
+            <p class="subtitulo">Cada letra se desplaza un número fijo de posiciones en el alfabeto.</p>
+        </header>
+
+        <div class="rueda-envoltorio">
+            <svg id="rueda" viewBox="0 0 300 300" width="240" height="240">
+                <circle cx="150" cy="150" r="128" fill="none" stroke="var(--line)" stroke-width="1" />
+                <circle cx="150" cy="150" r="92" fill="none" stroke="var(--line)" stroke-width="1" />
+                <g id="anillo-exterior"></g>
+                <g id="anillo-interior" class="rueda-anillo-interior"></g>
+                <text id="centro-num" class="rueda-centro-num" x="150" y="144">0</text>
+                <text class="rueda-centro-etiqueta" x="150" y="164">posiciones</text>
+            </svg>
+        </div>
+
+        <div class="tarjeta">
+
+            <div class="campo">
+                <label for="mensaje">Texto</label>
+                <textarea id="mensaje" placeholder="Escribe aquí el mensaje…"></textarea>
+            </div>
+
+            <div class="fila-llave">
+                <div class="campo">
+                    <label for="llave">Llave (k)</label>
+                    <input type="number" id="llave" value="3" step="1">
+                </div>
+                <div class="numero-romano" id="numero-romano">III</div>
+            </div>
+
+            <div class="campo">
+                <label>Operación</label>
+                <div class="modo-selector">
+                    <button type="button" class="modo-btn activo" data-modo="cifrar">Cifrar</button>
+                    <button type="button" class="modo-btn" data-modo="descifrar">Descifrar</button>
+                </div>
+            </div>
+
+            <button class="boton-principal" id="ejecutar">Cifrar mensaje</button>
+
+            <div class="resultado" id="resultado">
+                <div class="resultado-etiqueta">
+                    <span id="resultado-titulo">Texto cifrado</span>
+                    <button class="copiar-btn" id="copiar">copiar</button>
+                </div>
+                <div class="resultado-texto" id="resultado-texto"></div>
+            </div>
+
+            <details>
+                <summary>¿Cómo se calcula cada letra?</summary>
+                <p>
+                    Para cada letra del texto se toma su posición en el alfabeto (<code>a</code> = 0, <code>b</code> =
+                    1, …),
+                    se le suma la llave <code>k</code>, y el resultado se ajusta con <code>% 26</code> para que el
+                    conteo
+                    vuelva a empezar si se pasa de <code>z</code>. Al descifrar se aplica el mismo cálculo pero con
+                    <code>k</code> en negativo, deshaciendo el desplazamiento. Los espacios, números y signos de
+                    puntuación no se modifican.
+                </p>
+            </details>
+
+        </div>
+    </div>
+
+    <script>
+        // ---------- Lógica de cifrado (misma fórmula que el código de Python) ----------
+        function mod(n, m) {
+            return ((n % m) + m) % m;
+        }
+
+        function cifrarCaracter(caracter, k) {
+            if (/\p{L}/u.test(caracter)) {
+                const base = 'a'.charCodeAt(0);
+                const codigo = caracter.charCodeAt(0);
+                const formula = mod(codigo - base + k, 26) + base;
+                return String.fromCharCode(formula);
+            }
+            return caracter;
+        }
+
+        function cifrarTexto(texto, k) {
+            return [...texto].map(c => cifrarCaracter(c, k)).join('');
+        }
+
+        // ---------- Números romanos para la llave (detalle temático) ----------
+        function aRomano(num) {
+            if (!Number.isInteger(num)) return '';
+            const negativo = num < 0;
+            num = Math.abs(num);
+            if (num === 0) return 'nulla';
+            if (num > 3999) return '';
+            const valores = [1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1];
+            const simbolos = ['M', 'CM', 'D', 'CD', 'C', 'XC', 'L', 'XL', 'X', 'IX', 'V', 'IV', 'I'];
+            let resultado = '';
+            for (let i = 0; i < valores.length; i++) {
+                while (num >= valores[i]) {
+                    resultado += simbolos[i];
+                    num -= valores[i];
+                }
+            }
+            return (negativo ? '-' : '') + resultado;
+        }
+
+        // ---------- Rueda SVG ----------
+        const CX = 150, CY = 150;
+        const R_EXT = 128, R_INT = 92;
+        const alfabeto = 'abcdefghijklmnopqrstuvwxyz';
+
+        function polar(cx, cy, r, anguloGrados) {
+            const a = (anguloGrados - 90) * Math.PI / 180;
+            return { x: cx + r * Math.cos(a), y: cy + r * Math.sin(a) };
+        }
+
+        function dibujarAnillo(grupoId, radio, clase) {
+            const grupo = document.getElementById(grupoId);
+            let html = '';
+            for (let i = 0; i < 26; i++) {
+                const angulo = i * (360 / 26);
+                const p = polar(CX, CY, radio, angulo);
+                html += `<text class="rueda-letra ${clase}" x="${p.x.toFixed(1)}" y="${p.y.toFixed(1)}">${alfabeto[i]}</text>`;
+            }
+            grupo.innerHTML = html;
+        }
+
+        dibujarAnillo('anillo-exterior', R_EXT, 'exterior');
+        dibujarAnillo('anillo-interior', R_INT, 'interior');
+
+        function actualizarRueda(k, modo) {
+            const anguloBase = mod(k, 26) * (360 / 26);
+            const angulo = modo === 'descifrar' ? -anguloBase : anguloBase;
+            document.getElementById('anillo-interior').style.transform = `rotate(${angulo}deg)`;
+
+            const centro = document.getElementById('centro-num');
+            centro.textContent = k;
+            centro.classList.toggle('modo-descifrar', modo === 'descifrar');
+        }
+
+        // ---------- Estado e interacción ----------
+        let modoActual = 'cifrar';
+
+        const inputLlave = document.getElementById('llave');
+        const numeroRomano = document.getElementById('numero-romano');
+        const botonesModo = document.querySelectorAll('.modo-btn');
+        const botonEjecutar = document.getElementById('ejecutar');
+        const resultadoBox = document.getElementById('resultado');
+        const resultadoTexto = document.getElementById('resultado-texto');
+        const resultadoTitulo = document.getElementById('resultado-titulo');
+        const mensajeInput = document.getElementById('mensaje');
+
+        function leerLlave() {
+            const valor = parseInt(inputLlave.value, 10);
+            return Number.isNaN(valor) ? 0 : valor;
+        }
+
+        function refrescarUI() {
+            const k = leerLlave();
+            numeroRomano.textContent = aRomano(k);
+            actualizarRueda(k, modoActual);
+
+            if (modoActual === 'cifrar') {
+                botonEjecutar.textContent = 'Cifrar mensaje';
+                botonEjecutar.classList.remove('modo-descifrar');
+                resultadoTitulo.textContent = 'Texto cifrado';
+                resultadoTexto.classList.remove('modo-descifrar');
+            } else {
+                botonEjecutar.textContent = 'Descifrar mensaje';
+                botonEjecutar.classList.add('modo-descifrar');
+                resultadoTitulo.textContent = 'Texto descifrado';
+                resultadoTexto.classList.add('modo-descifrar');
+            }
+        }
+
+        botonesModo.forEach(btn => {
+            btn.addEventListener('click', () => {
+                botonesModo.forEach(b => b.classList.remove('activo'));
+                btn.classList.add('activo');
+                modoActual = btn.dataset.modo;
+                refrescarUI();
+            });
+        });
+
+        inputLlave.addEventListener('input', refrescarUI);
+
+        botonEjecutar.addEventListener('click', () => {
+            const k = leerLlave();
+            const k_efectiva = modoActual === 'descifrar' ? -k : k;
+            const texto = mensajeInput.value;
+            const resultado = cifrarTexto(texto, k_efectiva);
+
+            resultadoTexto.textContent = resultado || ' ';
+            resultadoBox.classList.add('visible');
+        });
+
+        document.getElementById('copiar').addEventListener('click', async () => {
+            const texto = resultadoTexto.textContent;
+            try {
+                await navigator.clipboard.writeText(texto);
+                const btn = document.getElementById('copiar');
+                const original = btn.textContent;
+                btn.textContent = 'copiado';
+                setTimeout(() => { btn.textContent = original; }, 1200);
+            } catch (e) {
+                // Si el navegador bloquea el portapapeles, no se hace nada más.
+            }
+        });
+
+        refrescarUI();
+    </script>
+</body>
+
+</html>
